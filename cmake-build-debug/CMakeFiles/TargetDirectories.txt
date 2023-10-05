@@ -1,0 +1,3 @@
+/home/haissam/CLionProjects/cmake-build-debug/CMakeFiles/CLionProjects.dir
+/home/haissam/CLionProjects/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/haissam/CLionProjects/cmake-build-debug/CMakeFiles/rebuild_cache.dir
