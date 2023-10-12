@@ -28,7 +28,7 @@ Stack stack(void) {
  * @pre push(s,e) defined if s->top < STACK_SIZE
  */
 Stack push(Stack s, int e) {
-	Element new = 0;
+    Element new = malloc(sizeof(Element));
 	new->value=e;
 	new->next = s->top;
 	s->top = new;

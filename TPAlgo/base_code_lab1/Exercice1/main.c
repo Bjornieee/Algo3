@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include "stack.h"
 
+
+void computeExpressions(FILE *input)
+
 /** Main function for testing the Stack implementation.
  * The main function expects one parameter that is the file where values added to the stack are
  * to be read.
@@ -46,4 +49,3 @@ int main(int argc, char *argv[]){
 	}
 	return 0;
 }
- 
