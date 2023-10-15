@@ -128,7 +128,7 @@ void computeExpressions(FILE *fd) {
         }
         if (!testgetline) {
             perror("getline ");
-            exit(1);
+            exit(EXIT_FAILURE);
         }
     }
     exit(0);
