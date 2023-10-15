@@ -51,8 +51,7 @@ Queue *shuntingYard(Queue *infix) {
             while (!stackEmpty(operator) &&
                    ((tokenGetOperatorPriority(stackTop(operator)) > tokenGetOperatorPriority(token)) ||
                     ((tokenGetOperatorPriority(stackTop(operator)) == tokenGetOperatorPriority(token)) &&
-                     tokenOperatorIsLeftAssociative(token))) &&
-                   tokenGetParenthesisSymbol(stackTop(operator)) != '(') {
+                     tokenOperatorIsLeftAssociative(token))) && tokenGetParenthesisSymbol(stackTop(operator)) != '(') {
                 queuePush(postfix, stackTop(operator));
                 stackPop(operator);
             }
@@ -71,11 +70,41 @@ Queue *shuntingYard(Queue *infix) {
     }
     if (queueSize(infix) == 0) {
         while (!stackEmpty(operator)) {
-        queuePush(postfix, stackTop(operator));
-        stackPop(operator);
+            queuePush(postfix, stackTop(operator));
+            stackPop(operator);
         }
     }
     return postfix;
+}
+Token *evaluateOperator(Token *arg1, Token *op, Token *arg2){
+    float val1 = tokenGetValue(arg1);
+    float val2 = tokenGetValue(arg2);
+    float result = 0;
+    switch(tokenGetOperatorSymbol(op)){
+        case '+': result = val1+val2; break;
+        case '-': result = val1-val2; break;
+        case '*': result = val1*val2; break;
+        case '/': result = val1/val2; break;
+        case '^': result = powf(val1,val2); break;
+    }
+    Token *token = createTokenFromValue(result);
+    return token;
+}
+float evaluateExpression(Queue *postfix) {
+    Stack *operand = createStack((int) queueSize(postfix));
+    while(!queueEmpty(postfix)) {
+        if(tokenIsOperator(queueTop(postfix))) {
+            Token *arg2 = stackTop(operand);
+            stackPop(operand);
+            Token *arg1 = stackTop(operand), *op = queueTop(postfix);
+            stackPop(operand);
+            stackPush(operand, evaluateOperator(arg1, op, arg2));
+        } else {
+            stackPush(operand, queueTop(postfix));
+        }
+        queuePop(postfix);
+    }
+    return tokenGetValue(stackTop(operand));
 }
 
 void computeExpressions(FILE *fd) {
@@ -91,7 +120,10 @@ void computeExpressions(FILE *fd) {
             printf("Infix    : ");
             queueDump(stdout, queue, &printToken);
             printf("\nPostfix  : ");
-            queueDump(stdout, shuntingYard(queue), &printToken);
+            Queue *postfix = shuntingYard(queue);
+            queueDump(stdout, postfix, &printToken);
+            float result = evaluateExpression(postfix);
+            printf("\nEvaluate : %6f", result);
             printf("\n\n");
         }
         if (!testgetline) {
