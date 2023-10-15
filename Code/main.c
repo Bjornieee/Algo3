@@ -1,6 +1,6 @@
 // Need this to use the getline C function on Linux. Works without this on MacOs. Not tested on Windows.
 #define _GNU_SOURCE
-//hey
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -20,12 +20,12 @@ Queue *stringToTokenQueue(const char *expression) {
     file = createQueue();
     const char *curpos = expression;
     int i = 0;
-    while (*curpos!='\0') {
+    while (*curpos != '\0') {
         while (*curpos == ' ' || *curpos == '\n') curpos++;
-        if(isSymbol(*curpos)){
-            queuePush(file, createTokenFromString(curpos,sizeof(char)));
+        if (isSymbol(*curpos)) {
+            queuePush(file, createTokenFromString(curpos, sizeof(char)));
             curpos++;
-        } else if(*curpos!='\0') {
+        } else if (*curpos != '\0') {
             const char *posinit = curpos;
             curpos++;
             i++;
@@ -34,32 +34,45 @@ Queue *stringToTokenQueue(const char *expression) {
     }
     return file;
 }
-void printToken(FILE *f, void *e) {
-    Token *token = (Token *)e;
-    tokenDump(f,token);
-    }
 
-Queue *shuntingYard(Queue* infix){
+void printToken(FILE *f, void *e) {
+    Token *token = (Token *) e;
+    tokenDump(f, token);
+}
+
+Queue *shuntingYard(Queue *infix) {
     Queue *postfix = createQueue();
-    Stack *operator = createStack(queueSize(infix));
-    for(int i=0;i<(int) queueSize(infix);i++){
+    Stack *operator = createStack((int) queueSize(infix));
+    while (!queueEmpty(infix)) {
         Token *token = queueTop(infix);
-        if(tokenIsNumber(token)) {
-            queuePush(postfix,token);
-        } else if(tokenGetOperatorSymbol(token)){
-            while(((tokenGetOperatorPriority(stackTop(operator))>tokenGetOperatorPriority(token)) || ((tokenGetOperatorPriority(stackTop(operator))==tokenGetOperatorPriority(token))&& tokenOperatorIsLeftAssociative(token))) && tokenGetParenthesisSymbol(token) != '(') {
+        if (tokenIsNumber(token)) {
+            queuePush(postfix, token);
+        } else if (tokenIsOperator(token)) {
+            while (!stackEmpty(operator) &&
+                   ((tokenGetOperatorPriority(stackTop(operator)) > tokenGetOperatorPriority(token)) ||
+                    ((tokenGetOperatorPriority(stackTop(operator)) == tokenGetOperatorPriority(token)) &&
+                     tokenOperatorIsLeftAssociative(token))) &&
+                   tokenGetParenthesisSymbol(stackTop(operator)) != '(') {
                 queuePush(postfix, stackTop(operator));
                 stackPop(operator);
             }
-            stackPush(operator,token);
-        } else if (tokenGetParenthesisSymbol(token)=='(') {
-            stackPush(operator,token);
-        } else if (tokenGetParenthesisSymbol(token)==')') {
-            while(tokenGetParenthesisSymbol(stackTop(operator))!='('){
+            stackPush(operator, token);
+        } else if (tokenGetParenthesisSymbol(token) == '(') {
+            stackPush(operator, token);
+        } else if (tokenGetParenthesisSymbol(token) == ')') {
+            while (tokenGetParenthesisSymbol(stackTop(operator)) != '(') {
                 queuePush(postfix, stackTop(operator));
                 stackPop(operator);
             }
             stackPop(operator);
+
+        }
+        queuePop(infix);
+    }
+    if (queueSize(infix) == 0) {
+        while (!stackEmpty(operator)) {
+        queuePush(postfix, stackTop(operator));
+        stackPop(operator);
         }
     }
     return postfix;
@@ -77,8 +90,8 @@ void computeExpressions(FILE *fd) {
             queue = stringToTokenQueue(buffer);
             printf("Infix    : ");
             queueDump(stdout, queue, &printToken);
-            printf("Postfix  : ");
-            shuntingYard(queue);
+            printf("\nPostfix  : ");
+            queueDump(stdout, shuntingYard(queue), &printToken);
             printf("\n\n");
         }
         if (!testgetline) {
@@ -90,11 +103,6 @@ void computeExpressions(FILE *fd) {
 }
 
 
-
-
-
-
-
 /** Main function for testing.
  * The main function expects one parameter that is the file where expressions to translate are
  * to be read.
@@ -103,7 +111,7 @@ void computeExpressions(FILE *fd) {
  *
  */
 int main(int argc, char *argv[]) {
-    if (argc < 2){
+    if (argc < 2) {
         fprintf(stderr, "usage : %s filename\n", argv[0]);
         return 1;
     }
