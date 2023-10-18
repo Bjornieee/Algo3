@@ -1,6 +1,5 @@
 // Need this to use the getline C function on Linux. Works without this on MacOs. Not tested on Windows.
 #define _GNU_SOURCE
-//hey
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -23,13 +22,15 @@ Queue *stringToTokenQueue(const char *expression) {
     while (*curpos != '\0') {
         while (*curpos == ' ' || *curpos == '\n') curpos++;
         if (isSymbol(*curpos)) {
-            queuePush(file, createTokenFromString(curpos, sizeof(char)));
+            Token *tokenSymbol = createTokenFromString(curpos, sizeof(char));
+            queuePush(file, tokenSymbol);
             curpos++;
         } else if (*curpos != '\0') {
             const char *posinit = curpos;
             curpos++;
             i++;
-            queuePush(file, createTokenFromString(posinit, i));
+            Token *token = createTokenFromString(posinit, i);
+            queuePush(file, token);
         }
     }
     return file;
@@ -48,23 +49,20 @@ Queue *shuntingYard(Queue *infix) {
         if (tokenIsNumber(token)) {
             queuePush(postfix, token);
         } else if (tokenIsOperator(token)) {
-            while (!stackEmpty(operator) &&
-                   ((tokenGetOperatorPriority(stackTop(operator)) > tokenGetOperatorPriority(token)) ||
-                    ((tokenGetOperatorPriority(stackTop(operator)) == tokenGetOperatorPriority(token)) &&
-                     tokenOperatorIsLeftAssociative(token))) && tokenGetParenthesisSymbol(stackTop(operator)) != '(') {
-                queuePush(postfix, stackTop(operator));
+            while (!stackEmpty(operator) && ((tokenIsOperator(token) && tokenIsOperator((stackTop(operator)))) && ((tokenGetOperatorPriority((stackTop(operator))) > tokenGetOperatorPriority(token)) || ((tokenGetOperatorPriority((stackTop(operator))) == tokenGetOperatorPriority(token)) &&
+                     tokenOperatorIsLeftAssociative(token)))) && (!tokenIsParenthesis(stackTop(operator)) ? true : tokenGetParenthesisSymbol((stackTop(operator))) != ')' )) {
+                queuePush(postfix, (stackTop(operator)));
                 stackPop(operator);
             }
             stackPush(operator, token);
-        } else if (tokenGetParenthesisSymbol(token) == '(') {
+        } else if (tokenIsParenthesis(token)&&tokenGetParenthesisSymbol(token) == '(') {
             stackPush(operator, token);
-        } else if (tokenGetParenthesisSymbol(token) == ')') {
-            while (tokenGetParenthesisSymbol(stackTop(operator)) != '(') {
-                queuePush(postfix, stackTop(operator));
+        } else if (tokenIsParenthesis(token)&&tokenGetParenthesisSymbol(token) == ')') {
+            while (!tokenIsParenthesis(stackTop(operator)) ? true : tokenGetParenthesisSymbol((stackTop(operator))) != '(' ) {
+                queuePush(postfix, (stackTop(operator)));
                 stackPop(operator);
             }
             stackPop(operator);
-
         }
         queuePop(infix);
     }
@@ -74,21 +72,35 @@ Queue *shuntingYard(Queue *infix) {
             stackPop(operator);
         }
     }
+    deleteStack(&operator);
+    deleteQueue(&infix);
     return postfix;
 }
 Token *evaluateOperator(Token *arg1, Token *op, Token *arg2){
     float val1 = tokenGetValue(arg1);
     float val2 = tokenGetValue(arg2);
     float result = 0;
-    switch(tokenGetOperatorSymbol(op)){
-        case '+': result = val1+val2; break;
-        case '-': result = val1-val2; break;
-        case '*': result = val1*val2; break;
-        case '/': result = val1/val2; break;
-        case '^': result = powf(val1,val2); break;
+    switch(tokenGetOperatorSymbol(op)) {
+        case '+':
+            result = val1 + val2;
+            break;
+        case '-':
+            result = val1 - val2;
+            break;
+        case '*':
+            result = val1 * val2;
+            break;
+        case '/':
+            result = val1 / val2;
+            break;
+        case '^':
+            result = powf(val1, val2);
+            break;
     }
-    Token *token = createTokenFromValue(result);
-    return token;
+    deleteToken(&arg1);
+    deleteToken(&arg2);
+    deleteToken(&op);
+    return createTokenFromValue(result);
 }
 float evaluateExpression(Queue *postfix) {
     Stack *operand = createStack((int) queueSize(postfix));
@@ -104,33 +116,42 @@ float evaluateExpression(Queue *postfix) {
         }
         queuePop(postfix);
     }
-    return tokenGetValue(stackTop(operand));
+    float value;
+    if(!stackEmpty(operand)){value = tokenGetValue(stackTop(operand));}
+    else {deleteStack(&operand);
+        fprintf(stderr,"erreur lors de l'évaluation de l'expression\n");
+        exit(EXIT_FAILURE);}
+    deleteStack(&operand);
+    return value;
 }
 
 void computeExpressions(FILE *fd) {
-    size_t size = 512;
+    size_t size = 128;
     char *buffer;
     buffer = malloc(size * sizeof(char));
+    if(!buffer){
+        fprintf(stderr, "malloc buffer");
+        exit(EXIT_FAILURE);
+    }
     int testgetline;
     Queue *queue;
     while (!feof(fd)) {
         if ((testgetline = getline(&buffer, &size, fd)) > 1) {
-            printf("Input    : %s", buffer);
+            printf("Input    : %s\rInfix    : ", buffer);
             queue = stringToTokenQueue(buffer);
-            printf("Infix    : ");
             queueDump(stdout, queue, &printToken);
             printf("\nPostfix  : ");
             Queue *postfix = shuntingYard(queue);
             queueDump(stdout, postfix, &printToken);
-            float result = evaluateExpression(postfix);
-            printf("\nEvaluate : %6f", result);
-            printf("\n\n");
+            printf("\nEvaluate : %6f\n\n", evaluateExpression(postfix));
+            deleteQueue(&postfix);
         }
         if (!testgetline) {
             perror("getline ");
             exit(EXIT_FAILURE);
         }
     }
+    free(buffer);
     exit(0);
 }
 
@@ -154,7 +175,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     computeExpressions(fd);
-
     fclose(fd);
     return 0;
 }
