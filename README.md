@@ -1,7 +1,7 @@
 # Rapport TP2
 
 ---
-__*Choix d'implémentation**__ 
+__*Choix d'implémentation*__ 
 
 
 __Fonction bool isSymbol(char c) :__
