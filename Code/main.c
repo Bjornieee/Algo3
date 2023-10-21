@@ -119,7 +119,7 @@ Token *evaluateOperator(Token *arg1, Token *op, Token *arg2) {
         deleteToken(&op);
         return createTokenFromValue(result);
     } else {
-        fprintf(stderr, "erreur lors de l'évaluation de l'expression");
+        fprintf(stderr, "erreur lors de l'évaluation de l'opération\n");
         exit(EXIT_FAILURE);
     }
 }
