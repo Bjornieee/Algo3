@@ -10,7 +10,7 @@ __Fonction bool isSymbol(char c) :__
 
 __Fonction Queue* stringToTokenQueue(const char* expression) :__
   - L'énoncé nous dis d'utiliser curpos en tant que const hors pour pouvoir incrémenter la position curpos ne peut avoir const.
-  - Pour que la fonction prenne en compte les valeurs a plusieurs chiffres il faut implémenter la boucle ```cpp
+  - Pour que la fonction prenne en compte les valeurs a plusieurs chiffres il faut implémenter la boucle ```
      while (*curpos != '\0' && !isSymbol(*curpos)) {
                 i++;
                 curpos++;
